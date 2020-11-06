@@ -1,0 +1,50 @@
+pub mod cosmetics;
+
+use std::fmt;
+
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+pub const MIN_ROWS: u32 = 20;
+pub const MAX_ROWS: u32 = 100;
+
+#[derive(Debug, Deserialize, Eq, PartialEq)]
+pub struct Paging {
+    pub page: Option<u32>,
+    pub rows: Option<u32>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RespData<T: Serialize> {
+    pub total: usize,
+    pub data: T,
+}
+
+#[allow(dead_code)]
+#[derive(Error, Debug)]
+pub enum AuthError {
+    #[error("invalid credentials")]
+    InvalidCredentials,
+    #[error("could not hash password")]
+    ArgonError,
+}
+
+#[derive(Debug)]
+pub enum CommonStatus {
+    Valid = 0,
+    Invalid = 1,
+}
+
+impl fmt::Display for CommonStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            CommonStatus::Valid => write!(f, "0"),
+            CommonStatus::Invalid => write!(f, "1"),
+        }
+    }
+}
+
+// validate request content input
+pub trait Validate {
+    fn validate(&self) -> Result<(), anyhow::Error>;
+}
