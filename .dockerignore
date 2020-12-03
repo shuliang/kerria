@@ -1,0 +1,10 @@
+.git
+.github
+.gitignore
+debug/
+target/
+test/test.http
+*.swp
+# data
+data/
+.env
