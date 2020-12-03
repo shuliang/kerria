@@ -25,7 +25,7 @@ warp = "0.2.3"
 http-api-problem = { version = "0.17.0", features = ["with-warp"] }
 biscuit = "0.5.0-beta1"
 argonautica = "0.2.0"
-sqlx = { version = "0.4.0-beta.1", default-features = false, features = [ "runtime-tokio", "macros", "mysql", "chrono", "json", "decimal"] }
+sqlx = { version = "0.4.0", features = [ "runtime-tokio-native-tls", "macros", "mysql", "chrono", "json", "decimal"] }
 redis = { version = "0.17.0", default-features = false, features = [ "tokio-rt-core" ]}
 hyper = "0.13.6"
 listenfd = "0.3.3"
