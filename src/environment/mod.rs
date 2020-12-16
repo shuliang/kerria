@@ -1,4 +1,7 @@
+mod jwt;
+
 use clap::Clap;
+use jwt::Jwt;
 use sqlx::mysql::MySqlPool;
 use std::net::SocketAddr;
 
@@ -19,14 +22,6 @@ pub struct Args {
 
     #[clap(required = true, long, env)]
     jwt_secret: String,
-    #[clap(required = true, long, env)]
-    argon_secret: String,
-    #[clap(long, env)]
-    argon_iterations: Option<u32>,
-    #[clap(long, env)]
-    argon_memory_size: Option<u32>,
-    #[clap(short, long, env)]
-    session_lifetime: Option<i64>,
 
     #[clap(default_value = "127.0.0.1:3000", env)]
     pub host: SocketAddr,
@@ -35,16 +30,26 @@ pub struct Args {
 #[derive(Clone, Debug)]
 pub struct Environment {
     db_pool: MySqlPool,
+    jwt: Jwt,
 }
 
 impl Environment {
     pub async fn new(args: &Args) -> anyhow::Result<Self> {
-        let Args { database_url, .. } = &args;
+        let Args {
+            database_url,
+            jwt_secret,
+            ..
+        } = &args;
         let db_pool = MySqlPool::connect(database_url).await?;
-        Ok(Self { db_pool })
+        let jwt = Jwt::new(&jwt_secret);
+        Ok(Self { db_pool, jwt })
     }
 
     pub fn db(&self) -> &MySqlPool {
         &self.db_pool
+    }
+
+    pub fn jwt(&self) -> &Jwt {
+        &self.jwt
     }
 }

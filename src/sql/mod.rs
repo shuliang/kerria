@@ -1,2 +1,2 @@
-pub mod cosmetics;
 pub mod admin;
+pub mod cosmetics;

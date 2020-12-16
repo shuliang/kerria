@@ -12,7 +12,6 @@ services:
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@127.0.0.1:3306/${MYSQL_DB}
       REDIS_URL: redis://cache:6379/
       JWT_SECRET: ${JWT_SECRET}
-      ARGON_SECRET: ${ARGON_SECRET}
     ports:
       - 3000:3000
     depends_on:

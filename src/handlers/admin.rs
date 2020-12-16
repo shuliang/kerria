@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Result};
 use argon2::Config;
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use rand::Rng;
 use serde_json::json;
 use warp::http::StatusCode;
@@ -12,16 +11,22 @@ use crate::models::admin::{
 use crate::models::AuthError;
 use crate::sql;
 
-const BEARER: &str = "Bearer ";
-const JWT_SECRET: &[u8] = b"sy#S7;g1@m&Y";
-
 pub async fn login_handler(env: Environment, req: AdminLoginRequest) -> Result<impl warp::Reply> {
     let res = sql::admin::get_user(env.db(), &req.username).await?;
     match res {
         Some(user) => {
             let is_valid = verify_password(user.password, req.password)?;
             if is_valid {
-                let token = create_jwt(user.id, user.username)?;
+                let expiry = chrono::Utc::now()
+                    .checked_add_signed(chrono::Duration::days(1))
+                    .expect("valid timestamp")
+                    .timestamp();
+                let claims = Claims {
+                    sub: user.id.to_string(),
+                    name: user.username,
+                    exp: expiry as usize,
+                };
+                let token = env.jwt().encode(claims)?;
                 let reply = warp::reply::json(&AdminLoginResponse { token });
                 return Ok(reply);
             } else {
@@ -29,47 +34,6 @@ pub async fn login_handler(env: Environment, req: AdminLoginRequest) -> Result<i
             }
         }
         None => return Err(AuthError::InvalidUserName.into()),
-    }
-}
-
-fn create_jwt(id: u64, username: String) -> Result<String> {
-    let expiry = chrono::Utc::now()
-        .checked_add_signed(chrono::Duration::days(2))
-        .expect("valid timestamp")
-        .timestamp();
-    let claims = Claims {
-        sub: id.to_string(),
-        name: username,
-        exp: expiry as usize,
-    };
-    let header = Header::new(Algorithm::HS512);
-    let token = encode(&header, &claims, &EncodingKey::from_secret(JWT_SECRET))?;
-    Ok(token)
-}
-
-pub async fn auth_handler(jwt_raw: Option<String>) -> Result<AdminUser> {
-    match jwt_raw {
-        None => return Err(AuthError::NoAuthHeaderError.into()),
-        Some(v) => {
-            if !v.starts_with(BEARER) {
-                return Err(AuthError::InvalidAuthHeaderError.into());
-            }
-            let jwt = v.trim_start_matches(BEARER);
-            let decoded = decode::<Claims>(
-                &jwt,
-                &DecodingKey::from_secret(JWT_SECRET),
-                &Validation::new(Algorithm::HS512),
-            )
-            .map_err(|_| AuthError::JWTTokenError)?;
-            let id = decoded.claims.sub.parse::<u64>();
-            if id.is_err() {
-                return Err(AuthError::InvalidAuthHeaderError.into());
-            }
-            return Ok(AdminUser {
-                id: id.unwrap(),
-                username: decoded.claims.name,
-            });
-        }
     }
 }
 

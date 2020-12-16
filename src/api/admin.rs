@@ -33,24 +33,27 @@ fn admin_login(
         })
 }
 
-fn with_auth() -> impl Filter<Extract = (AdminUser,), Error = warp::Rejection> + Clone {
-    warp::header::optional::<String>("authorization").and_then(
-        |jwt_raw: Option<String>| async move {
-            handlers::admin::auth_handler(jwt_raw)
-                .await
+fn with_auth(
+    env: Environment,
+) -> impl Filter<Extract = (Environment, AdminUser), Error = warp::Rejection> + Clone {
+    let env = warp::any().map(move || env.clone());
+    let auth = warp::header::optional::<String>("authorization")
+        .and(env.clone())
+        .and_then(|jwt_raw: Option<String>, env: Environment| async move {
+            env.jwt()
+                .decode_to_admin_user(jwt_raw)
                 .map_err(problem::build)
-        },
-    )
+        });
+
+    warp::any().and(env.clone()).and(auth)
 }
 
 fn admin_create_user(
     env: Environment,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let env = warp::any().map(move || env.clone());
     warp::path!("admin" / "gen")
         .and(warp::post())
-        .and(env.clone())
-        .and(with_auth())
+        .and(with_auth(env.clone()))
         .and(warp::body::content_length_limit(1024))
         .and(warp::body::json())
         .and_then(
@@ -65,11 +68,9 @@ fn admin_create_user(
 fn admin_update_password(
     env: Environment,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let env = warp::any().map(move || env.clone());
     warp::path!("admin" / "api" / "v1" / "password")
         .and(warp::post())
-        .and(env.clone())
-        .and(with_auth())
+        .and(with_auth(env.clone()))
         .and(warp::body::content_length_limit(1024))
         .and(warp::body::json())
         .and_then(
@@ -84,8 +85,6 @@ fn admin_update_password(
 fn admin_cosmetics(
     env: Environment,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let env = warp::any().map(move || env.clone());
-
     // cosmetics api
     let prefix = warp::path!("admin" / "api" / "v1" / "cosmetics" / ..);
 
@@ -95,8 +94,7 @@ fn admin_cosmetics(
     let create_brands = warp::path!("brands")
         .and(warp::path::end())
         .and(warp::post())
-        .and(env.clone())
-        .and(with_auth())
+        .and(with_auth(env.clone()))
         .and(warp::body::content_length_limit(10240))
         .and(warp::body::json())
         .and_then(
@@ -111,8 +109,7 @@ fn admin_cosmetics(
     let get_brands = warp::path!("brands")
         .and(warp::path::end())
         .and(warp::get())
-        .and(env.clone())
-        .and(with_auth())
+        .and(with_auth(env.clone()))
         .and_then(|env: Environment, _user: AdminUser| async move {
             handlers::cosmetics::get_all_brands(env)
                 .await
@@ -123,8 +120,7 @@ fn admin_cosmetics(
     let update_brands_sequence = warp::path!("brands" / "sequence")
         .and(warp::path::end())
         .and(warp::put())
-        .and(env.clone())
-        .and(with_auth())
+        .and(with_auth(env.clone()))
         .and(warp::body::content_length_limit(10240))
         .and(warp::body::json())
         .and_then(
@@ -138,8 +134,7 @@ fn admin_cosmetics(
     // DELETE /../brand/{id}
     let delete_brand = warp::path!("brand" / u32)
         .and(warp::delete())
-        .and(env.clone())
-        .and(with_auth())
+        .and(with_auth(env.clone()))
         .and_then(|id: u32, env: Environment, user: AdminUser| async move {
             handlers::cosmetics::delete_brand(env, id, user.username.as_str())
                 .await
@@ -156,8 +151,7 @@ fn admin_cosmetics(
     // POST /../product
     let create_product = warp::path!("product")
         .and(warp::path::end())
-        .and(env.clone())
-        .and(with_auth())
+        .and(with_auth(env.clone()))
         .and(warp::body::content_length_limit(4096))
         .and(warp::body::json())
         .and_then(
@@ -172,8 +166,7 @@ fn admin_cosmetics(
     let get_product_list = warp::path!("products")
         .and(warp::path::end())
         .and(warp::get())
-        .and(env.clone())
-        .and(with_auth())
+        .and(with_auth(env.clone()))
         .and(warp::query::<Paging>())
         .and_then(
             |env: Environment, _user: AdminUser, paging: Paging| async move {
@@ -186,8 +179,7 @@ fn admin_cosmetics(
     // GET /../product/{id}
     let get_product = warp::path!("product" / u32)
         .and(warp::get())
-        .and(env.clone())
-        .and(with_auth())
+        .and(with_auth(env.clone()))
         .and_then(|id: u32, env: Environment, _user: AdminUser| async move {
             handlers::cosmetics::get_product(env, id)
                 .await
@@ -197,8 +189,7 @@ fn admin_cosmetics(
     // PUT /../product/{id}
     let update_product = warp::path!("product" / u32)
         .and(warp::put())
-        .and(env.clone())
-        .and(with_auth())
+        .and(with_auth(env.clone()))
         .and(warp::body::content_length_limit(4096))
         .and(warp::body::json())
         .and_then(
@@ -212,8 +203,7 @@ fn admin_cosmetics(
     // DELETE /../product/{id}
     let delete_product = warp::path!("product" / u32)
         .and(warp::delete())
-        .and(env.clone())
-        .and(with_auth())
+        .and(with_auth(env.clone()))
         .and_then(|id: u32, env: Environment, user: AdminUser| async move {
             handlers::cosmetics::delete_product(env, id, user.username.as_str())
                 .await
@@ -232,8 +222,7 @@ fn admin_cosmetics(
     let add_hot_product = warp::path!("product" / "hot")
         .and(warp::path::end())
         .and(warp::post())
-        .and(env.clone())
-        .and(with_auth())
+        .and(with_auth(env.clone()))
         .and(warp::body::content_length_limit(4096))
         .and(warp::body::json())
         .and_then(
@@ -248,8 +237,7 @@ fn admin_cosmetics(
     let get_hot_products = warp::path!("product" / "hot")
         .and(warp::path::end())
         .and(warp::get())
-        .and(env.clone())
-        .and(with_auth())
+        .and(with_auth(env.clone()))
         .and_then(|env: Environment, _user: AdminUser| async move {
             handlers::cosmetics::get_hot_products(env)
                 .await
