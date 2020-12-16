@@ -1,4 +1,5 @@
 use http_api_problem::HttpApiProblem as Problem;
+use models::AuthError;
 use std::convert::Infallible;
 use warp::http;
 use warp::{Rejection, Reply};
@@ -15,22 +16,17 @@ pub fn pack(err: anyhow::Error) -> Problem {
         Err(err) => err,
     };
 
-    if let Some(err) = err.downcast_ref::<models::AuthError>() {
+    if let Some(err) = err.downcast_ref::<AuthError>() {
         match err {
-            models::AuthError::InvalidCredentials => {
-                return Problem::new("Invalid credentials.")
+            AuthError::NoAuthHeaderError
+            | AuthError::InvalidAuthHeaderError
+            | AuthError::InvalidUserName
+            | AuthError::InvalidCredentials => {
+                return Problem::new("Invalid auth or credentials.")
                     .set_status(http::StatusCode::UNAUTHORIZED)
-                    .set_detail("The passed credentials were invalid.")
+                    .set_detail(format!("{:#}", err));
             }
-            models::AuthError::ArgonError => (),
-        }
-    }
-
-    if let Some(err) = err.downcast_ref::<biscuit::errors::Error>() {
-        if let biscuit::errors::Error::ValidationError(e) = err {
-            return Problem::new("Invalid JWT token.")
-                .set_status(http::StatusCode::BAD_REQUEST)
-                .set_detail(format!("The passed JWT token were invalid. {}", e));
+            _ => (),
         }
     }
 

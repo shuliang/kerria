@@ -1,13 +1,14 @@
 use clap::Clap;
 use hyper::server::Server;
+use listenfd::ListenFd;
+use std::convert::Infallible;
+use warp::{http::Method, Filter};
+
 use kerria::{
     api,
     environment::{Args, Environment},
     helpers::problem,
 };
-use listenfd::ListenFd;
-use std::convert::Infallible;
-use warp::{http::Method, Filter};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -27,12 +28,12 @@ async fn main() -> anyhow::Result<()> {
     let log = warp::log("api::request");
     let status = api::status();
     let cosmetics = api::cosmetics(env.clone());
-    let admin_cosmetics = api::admin_cosmetics(env.clone());
+    let admin_filters = api::admin_filters(env.clone());
 
     let svc = warp::service(
         status
             .or(cosmetics)
-            .or(admin_cosmetics)
+            .or(admin_filters)
             .recover(problem::unpack)
             .with(cors)
             .with(log),

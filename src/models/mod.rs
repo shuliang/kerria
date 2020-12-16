@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod cosmetics;
 
 use std::fmt;
@@ -20,13 +21,24 @@ pub struct RespData<T: Serialize> {
     pub data: T,
 }
 
-#[allow(dead_code)]
 #[derive(Error, Debug)]
 pub enum AuthError {
-    #[error("invalid credentials")]
+    #[error("no auth header")]
+    NoAuthHeaderError,
+    #[error("invalid auth header")]
+    InvalidAuthHeaderError,
+    #[error("invalid username")]
+    InvalidUserName,
+    #[error("invalid credentials (password)")]
     InvalidCredentials,
     #[error("could not hash password")]
-    ArgonError,
+    EncryptError,
+    #[error("jwt token not valid")]
+    JWTTokenError,
+    #[error("jwt token creation error")]
+    JWTTokenCreationError,
+    #[error("no permission")]
+    NoPermissionError,
 }
 
 #[derive(Debug)]
