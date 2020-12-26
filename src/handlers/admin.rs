@@ -15,7 +15,7 @@ pub async fn login_handler(env: Environment, req: AdminLoginRequest) -> Result<i
     let res = sql::admin::get_user(env.db(), &req.username).await?;
     match res {
         Some(user) => {
-            let is_valid = verify_password(user.password, req.password)?;
+            let is_valid = verify_password(&user.password, req.password.as_bytes())?;
             if is_valid {
                 let expiry = chrono::Utc::now()
                     .checked_add_signed(chrono::Duration::days(1))
@@ -27,7 +27,11 @@ pub async fn login_handler(env: Environment, req: AdminLoginRequest) -> Result<i
                     exp: expiry as usize,
                 };
                 let token = env.jwt().encode(claims)?;
-                let reply = warp::reply::json(&AdminLoginResponse { token });
+                let reply = warp::reply::json(&AdminLoginResponse {
+                    username: req.username,
+                    token,
+                    avatar: None,
+                });
                 return Ok(reply);
             } else {
                 return Err(AuthError::InvalidCredentials.into());
@@ -52,9 +56,24 @@ pub async fn create_user_handler(
     Ok(reply)
 }
 
+pub async fn get_current_user_handler(
+    env: Environment,
+    user: AdminUser,
+    jwt: String,
+) -> Result<impl warp::Reply> {
+    let token = env.jwt().trim_token(jwt)?;
+    let reply = warp::reply::json(&AdminLoginResponse {
+        username: user.username,
+        token,
+        avatar: None,
+    });
+    return Ok(reply);
+}
+
 pub async fn update_password_handler(
     env: Environment,
     user: AdminUser,
+    jwt: String,
     req: UpdatePassword,
 ) -> Result<impl warp::Reply> {
     if req.new_password.len() < 12 {
@@ -64,13 +83,20 @@ pub async fn update_password_handler(
     match res {
         None => return Err(AuthError::InvalidUserName.into()),
         Some(u) => {
-            let is_valid = verify_password(u.password, req.old_password)?;
+            let is_valid = verify_password(&u.password, req.old_password.as_bytes())?;
             if !is_valid {
                 return Err(AuthError::InvalidCredentials.into());
             }
             let new_pw = hash_password(req.new_password.as_bytes())?;
-            sql::admin::update_password(env.db(), user.username, new_pw).await?;
-            Ok(StatusCode::OK)
+            sql::admin::update_password(env.db(), &user.username, &new_pw).await?;
+
+            let token = env.jwt().trim_token(jwt)?;
+            let reply = warp::reply::json(&AdminLoginResponse {
+                username: user.username,
+                token,
+                avatar: None,
+            });
+            Ok(reply)
         }
     }
 }
@@ -85,7 +111,6 @@ fn hash_password(password: &[u8]) -> Result<String> {
     Ok(encode)
 }
 
-fn verify_password(password1: String, password2: String) -> Result<bool> {
-    argon2::verify_encoded(password1.as_str(), password2.as_bytes())
-        .map_err(|_| AuthError::InvalidCredentials.into())
+fn verify_password(password1: &str, password2: &[u8]) -> Result<bool> {
+    argon2::verify_encoded(password1, password2).map_err(|_| AuthError::InvalidCredentials.into())
 }

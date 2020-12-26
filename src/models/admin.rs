@@ -15,7 +15,9 @@ pub struct AdminLoginRequest {
 
 #[derive(Serialize, Debug)]
 pub struct AdminLoginResponse {
+    pub username: String,
     pub token: String,
+    pub avatar: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

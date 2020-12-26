@@ -60,4 +60,11 @@ impl Jwt {
             username: claims.name,
         })
     }
+
+    pub fn trim_token(&self, jwt: String) -> Result<String> {
+        if !jwt.starts_with(BEARER) {
+            return Err(AuthError::InvalidAuthHeaderError.into());
+        }
+        Ok(jwt.trim_start_matches(BEARER).to_owned())
+    }
 }

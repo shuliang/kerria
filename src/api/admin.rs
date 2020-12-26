@@ -14,6 +14,7 @@ pub fn admin_filters(
     admin_login(env.clone())
         .or(admin_cosmetics(env.clone()))
         .or(admin_create_user(env.clone()))
+        .or(admin_current_user(env.clone()))
         .or(admin_update_password(env.clone()))
 }
 
@@ -65,17 +66,33 @@ fn admin_create_user(
         )
 }
 
+fn admin_current_user(
+    env: Environment,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("admin" / "api" / "v1" / "user")
+        .and(warp::path::end())
+        .and(warp::get())
+        .and(with_auth(env.clone()))
+        .and(warp::header::<String>("authorization"))
+        .and_then(|env, user, jwt| async move {
+            handlers::admin::get_current_user_handler(env, user, jwt)
+                .await
+                .map_err(problem::build)
+        })
+}
+
 fn admin_update_password(
     env: Environment,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("admin" / "api" / "v1" / "password")
-        .and(warp::post())
+        .and(warp::put())
         .and(with_auth(env.clone()))
+        .and(warp::header::<String>("authorization"))
         .and(warp::body::content_length_limit(1024))
         .and(warp::body::json())
         .and_then(
-            |env: Environment, user: AdminUser, req: UpdatePassword| async move {
-                handlers::admin::update_password_handler(env, user, req)
+            |env: Environment, user: AdminUser, jwt, req: UpdatePassword| async move {
+                handlers::admin::update_password_handler(env, user, jwt, req)
                     .await
                     .map_err(problem::build)
             },

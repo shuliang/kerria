@@ -22,7 +22,7 @@ pub fn pack(err: anyhow::Error) -> Problem {
             | AuthError::InvalidAuthHeaderError
             | AuthError::InvalidUserName
             | AuthError::InvalidCredentials => {
-                return Problem::new("Invalid auth or credentials.")
+                return Problem::new("Invalid Auth or Credentials")
                     .set_status(http::StatusCode::UNAUTHORIZED)
                     .set_detail(format!("{:#}", err));
             }
@@ -56,7 +56,7 @@ pub async fn unpack(rejection: Rejection) -> Result<impl Reply, Infallible> {
     } else if let Some(problem) = rejection.find::<Problem>() {
         reply_from_problem(problem)
     } else if let Some(e) = rejection.find::<warp::filters::body::BodyDeserializeError>() {
-        let problem = Problem::new("Invalid Request Body.")
+        let problem = Problem::new("Invalid Request Body")
             .set_status(http::StatusCode::BAD_REQUEST)
             .set_detail(format!("Request body is invalid. {}", e));
         reply_from_problem(&problem)

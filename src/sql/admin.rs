@@ -40,7 +40,7 @@ VALUES (?, ?, ?)
     Ok(id)
 }
 
-pub async fn update_password(db: &MySqlPool, username: String, password: String) -> Result<bool> {
+pub async fn update_password(db: &MySqlPool, username: &str, password: &str) -> Result<bool> {
     let row = query_unchecked!(
         r#"
 UPDATE admin_user SET `password` = ?
