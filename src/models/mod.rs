@@ -11,8 +11,8 @@ pub const MAX_ROWS: u32 = 100;
 
 #[derive(Debug, Deserialize, Eq, PartialEq)]
 pub struct Paging {
-    pub page: Option<u32>,
-    pub rows: Option<u32>,
+    pub offset: Option<u32>,
+    pub limit: Option<u32>,
 }
 
 #[derive(Debug, Serialize)]

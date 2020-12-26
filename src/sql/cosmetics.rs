@@ -84,8 +84,8 @@ WHERE status = ?
 ORDER BY `sequence`, id
 LIMIT ?, ?"#,
         CommonStatus::Valid as i8,
-        paging.page.unwrap_or(0),
-        paging.rows.unwrap_or(MAX_ROWS).min(MAX_ROWS),
+        paging.offset.unwrap_or(0),
+        paging.limit.unwrap_or(MAX_ROWS).min(MAX_ROWS),
     )
     .fetch_all(db)
     .await
@@ -179,8 +179,8 @@ LIMIT ?, ?
 "#,
         id,
         CommonStatus::Valid as i8,
-        paging.page.unwrap_or(0),
-        paging.rows.unwrap_or(MIN_ROWS).min(MAX_ROWS),
+        paging.offset.unwrap_or(0),
+        paging.limit.unwrap_or(MIN_ROWS).min(MAX_ROWS),
     )
     .fetch_all(db)
     .await
@@ -240,8 +240,8 @@ ORDER BY id
 LIMIT ?, ?
 "#,
         CommonStatus::Valid as i8,
-        paging.page.unwrap_or(0),
-        paging.rows.unwrap_or(MAX_ROWS).min(MAX_ROWS),
+        paging.offset.unwrap_or(0),
+        paging.limit.unwrap_or(MAX_ROWS).min(MAX_ROWS),
     )
     .fetch_all(db)
     .await
