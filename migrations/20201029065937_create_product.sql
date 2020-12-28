@@ -7,7 +7,7 @@ CREATE TABLE `product` (
   `brand_id` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '品牌 brand.id',
   `brand_name` VARCHAR(128) NOT NULL DEFAULT '' COMMENT '品牌名称',
   `spec` VARCHAR(128) NOT NULL DEFAULT '' COMMENT '规格',
-  `type` TINYINT NOT NULL DEFAULT 0 COMMENT '类型，0：正装，1：小样',
+  `kind` TINYINT NOT NULL DEFAULT 0 COMMENT '类型，0：正装，1：小样',
   `sell_price` DECIMAL(9,2) NOT NULL DEFAULT 0 COMMENT '售价',
   `import_price` DECIMAL(9,2) NOT NULL DEFAULT 0 COMMENT '参考进货价',
   `jd_id` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '参考京东ID',
