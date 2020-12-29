@@ -40,20 +40,27 @@ pub struct BrandItem {
     pub img_url: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ProductItem {
     pub id: u64,
     pub name: String,
     pub alias: String,
     pub title: String,
     pub subtitle: String,
-    pub brand_id: u64,
+    pub brand_id: u32,
     pub brand_name: String,
-    pub sell_price: String,
+    pub spec: String,
+    pub kind: u8,
+    pub sell_price: f32,
+    pub import_price: f32,
+    pub jd_id: String,
+    pub jd_url: String,
     pub img_url: String,
+    pub status: u8,
+    pub comment: String,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, Deserialize, Default)]
 pub struct NewProduct {
     pub id: Option<u64>,
     pub name: String,
@@ -69,12 +76,26 @@ pub struct NewProduct {
     pub jd_url: String,
     pub status: u8,
     pub comment: String,
+
+    #[serde(skip_deserializing)]
+    pub img_url: String,
+    #[serde(skip_deserializing)]
+    pub brand_id: u64,
 }
 
 impl Validate for NewProduct {
     fn validate(&self) -> Result<(), anyhow::Error> {
         if self.name.len() == 0 {
-            return Err(anyhow!("Product name can't be empty."));
+            return Err(anyhow!("商品名称不能为空"));
+        }
+        if self.title.len() == 0 {
+            return Err(anyhow!("商品标题不能为空"));
+        }
+        if self.sell_price <= 0.0 {
+            return Err(anyhow!("商品售价应为正数"));
+        }
+        if self.status != 0 && self.status != 1 {
+            return Err(anyhow!("请检查商品状态"));
         }
         Ok(())
     }

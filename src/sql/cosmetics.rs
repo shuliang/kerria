@@ -217,7 +217,8 @@ pub async fn get_product(db: &MySqlPool, id: u64) -> Result<Option<ProductItem>>
     query_as_unchecked!(
         ProductItem,
         r#"
-SELECT `id`, `name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`, `sell_price`, `img_url`
+SELECT `id`, `name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`, `spec`, `kind`, `sell_price`, `import_price`, `jd_id`, `jd_url`, `img_url`,
+`status`, `comment`
 FROM product
 WHERE id = ? AND status = ?
 "#,
@@ -233,7 +234,8 @@ pub async fn get_products(db: &MySqlPool, paging: Paging) -> Result<Vec<ProductI
     query_as_unchecked!(
         ProductItem,
         r#"
-SELECT id, `name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`, `sell_price`, `img_url`
+SELECT `id`, `name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`, `spec`, `kind`, `sell_price`, `import_price`, `jd_id`, `jd_url`, `img_url`,
+`status`, `comment`
 FROM product
 WHERE status = ? 
 ORDER BY id
