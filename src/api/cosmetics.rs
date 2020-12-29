@@ -37,10 +37,10 @@ pub fn cosmetics(
         });
 
     // GET /api/v1/cosmetics/product/{id}
-    let get_product_detail = warp::path!("product" / u32)
+    let get_product_detail = warp::path!("product" / u64)
         .and(warp::get())
         .and(env.clone())
-        .and_then(|id: u32, env: Environment| async move {
+        .and_then(|id: u64, env: Environment| async move {
             handlers::cosmetics::get_product(env, id)
                 .await
                 .map_err(problem::build)

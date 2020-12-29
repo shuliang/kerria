@@ -194,23 +194,23 @@ fn admin_cosmetics(
         );
 
     // GET /../product/{id}
-    let get_product = warp::path!("product" / u32)
+    let get_product = warp::path!("product" / u64)
         .and(warp::get())
         .and(with_auth(env.clone()))
-        .and_then(|id: u32, env: Environment, _user: AdminUser| async move {
+        .and_then(|id: u64, env: Environment, _user: AdminUser| async move {
             handlers::cosmetics::get_product(env, id)
                 .await
                 .map_err(problem::build)
         });
 
     // PUT /../product/{id}
-    let update_product = warp::path!("product" / u32)
+    let update_product = warp::path!("product" / u64)
         .and(warp::put())
         .and(with_auth(env.clone()))
         .and(warp::body::content_length_limit(4096))
         .and(warp::body::json())
         .and_then(
-            |id: u32, env: Environment, user: AdminUser, product: NewProduct| async move {
+            |id: u64, env: Environment, user: AdminUser, product: NewProduct| async move {
                 handlers::cosmetics::update_product(env, id, product, user.username.as_str())
                     .await
                     .map_err(problem::build)
@@ -218,10 +218,10 @@ fn admin_cosmetics(
         );
 
     // DELETE /../product/{id}
-    let delete_product = warp::path!("product" / u32)
+    let delete_product = warp::path!("product" / u64)
         .and(warp::delete())
         .and(with_auth(env.clone()))
-        .and_then(|id: u32, env: Environment, user: AdminUser| async move {
+        .and_then(|id: u64, env: Environment, user: AdminUser| async move {
             handlers::cosmetics::delete_product(env, id, user.username.as_str())
                 .await
                 .map_err(problem::build)
@@ -243,7 +243,7 @@ fn admin_cosmetics(
         .and(warp::body::content_length_limit(4096))
         .and(warp::body::json())
         .and_then(
-            |env: Environment, user: AdminUser, hps: Vec<u32>| async move {
+            |env: Environment, user: AdminUser, hps: Vec<u64>| async move {
                 handlers::cosmetics::add_hot_product(env, hps, user.username.as_str())
                     .await
                     .map_err(problem::build)

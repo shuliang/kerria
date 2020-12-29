@@ -53,16 +53,22 @@ pub struct ProductItem {
     pub img_url: String,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct NewProduct {
+    pub id: Option<u64>,
     pub name: String,
     pub alias: String,
     pub title: String,
     pub subtitle: String,
-    pub brand_id: u64,
     pub brand_name: String,
-    pub sell_price: Decimal,
-    pub img_url: String,
+    pub spec: String,
+    pub kind: u8,
+    pub sell_price: f32,
+    pub import_price: f32,
+    pub jd_id: String,
+    pub jd_url: String,
+    pub status: u8,
+    pub comment: String,
 }
 
 impl Validate for NewProduct {

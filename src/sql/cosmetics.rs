@@ -213,7 +213,7 @@ VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)
     Ok(id)
 }
 
-pub async fn get_product(db: &MySqlPool, id: u32) -> Result<Option<ProductItem>> {
+pub async fn get_product(db: &MySqlPool, id: u64) -> Result<Option<ProductItem>> {
     query_as_unchecked!(
         ProductItem,
         r#"
@@ -250,7 +250,7 @@ LIMIT ?, ?
 
 pub async fn update_product(
     db: &MySqlPool,
-    id: u32,
+    id: u64,
     product: NewProduct,
     operator: &str,
 ) -> Result<bool> {
@@ -278,7 +278,7 @@ WHERE id = ?
     Ok(row > 0)
 }
 
-pub async fn delete_product(db: &MySqlPool, id: u32, operator: &str) -> Result<bool> {
+pub async fn delete_product(db: &MySqlPool, id: u64, operator: &str) -> Result<bool> {
     let row = query_unchecked!(
         r#"UPDATE product SET status = ?, modifier = ? WHERE id = ?"#,
         CommonStatus::Invalid as i8,
@@ -292,7 +292,7 @@ pub async fn delete_product(db: &MySqlPool, id: u32, operator: &str) -> Result<b
     Ok(row > 0)
 }
 
-pub async fn is_product_valid(db: &MySqlPool, id: u32) -> Result<bool> {
+pub async fn is_product_valid(db: &MySqlPool, id: u64) -> Result<bool> {
     let id = query_unchecked!(
         r#"SELECT id FROM product WHERE id = ? AND status = ? LIMIT 1"#,
         id,
@@ -340,7 +340,7 @@ pub async fn delete_hot_products(db: &MySqlPool, operator: &str) -> Result<bool>
 
 pub async fn create_hot_products(
     db: &MySqlPool,
-    hot_products: Vec<u32>,
+    hot_products: Vec<u64>,
     operator: &str,
 ) -> Result<bool> {
     let mut s = hot_products.iter().fold(

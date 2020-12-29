@@ -124,7 +124,7 @@ pub async fn create_product(
     Ok(reply)
 }
 
-pub async fn get_product(env: Environment, id: u32) -> Result<Box<dyn warp::Reply>> {
+pub async fn get_product(env: Environment, id: u64) -> Result<Box<dyn warp::Reply>> {
     let res = sql::cosmetics::get_product(env.db(), id).await?;
     match res {
         Some(product) => return Ok(Box::new(warp::reply::json(&product))),
@@ -143,7 +143,7 @@ pub async fn get_products(env: Environment, paging: Paging) -> Result<impl warp:
 
 pub async fn update_product(
     env: Environment,
-    id: u32,
+    id: u64,
     product: NewProduct,
     operator: &str,
 ) -> Result<impl warp::Reply> {
@@ -158,7 +158,7 @@ pub async fn update_product(
     Err(anyhow!("Update product failed, id: {}.", id).into())
 }
 
-pub async fn delete_product(env: Environment, id: u32, operator: &str) -> Result<impl warp::Reply> {
+pub async fn delete_product(env: Environment, id: u64, operator: &str) -> Result<impl warp::Reply> {
     let ok = sql::cosmetics::delete_product(env.db(), id, operator).await?;
     if ok {
         return Ok(StatusCode::NO_CONTENT);
@@ -168,7 +168,7 @@ pub async fn delete_product(env: Environment, id: u32, operator: &str) -> Result
 
 pub async fn add_hot_product(
     env: Environment,
-    hot_products: Vec<u32>,
+    hot_products: Vec<u64>,
     operator: &str,
 ) -> Result<impl warp::Reply> {
     sql::cosmetics::delete_hot_products(env.db(), operator).await?;
