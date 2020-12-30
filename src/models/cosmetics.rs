@@ -51,8 +51,8 @@ pub struct ProductItem {
     pub brand_name: String,
     pub spec: String,
     pub kind: u8,
-    pub sell_price: f32,
-    pub import_price: f32,
+    pub sell_price: Decimal,
+    pub import_price: Decimal,
     pub jd_id: String,
     pub jd_url: String,
     pub img_url: String,
@@ -70,8 +70,8 @@ pub struct NewProduct {
     pub brand_name: String,
     pub spec: String,
     pub kind: u8,
-    pub sell_price: f32,
-    pub import_price: f32,
+    pub sell_price: Decimal,
+    pub import_price: Decimal,
     pub jd_id: String,
     pub jd_url: String,
     pub status: u8,
@@ -91,7 +91,7 @@ impl Validate for NewProduct {
         if self.title.len() == 0 {
             return Err(anyhow!("商品标题不能为空"));
         }
-        if self.sell_price <= 0.0 {
+        if self.sell_price < Decimal::new(0, 2) {
             return Err(anyhow!("商品售价应为正数"));
         }
         if self.status != 0 && self.status != 1 {

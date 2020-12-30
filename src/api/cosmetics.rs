@@ -41,7 +41,7 @@ pub fn cosmetics(
         .and(warp::get())
         .and(env.clone())
         .and_then(|id: u64, env: Environment| async move {
-            handlers::cosmetics::get_product(env, id)
+            handlers::cosmetics::get_product(env, id, true)
                 .await
                 .map_err(problem::build)
         });

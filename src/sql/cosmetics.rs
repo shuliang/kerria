@@ -192,9 +192,10 @@ LIMIT ?, ?
 pub async fn create_product(db: &MySqlPool, product: NewProduct, operator: &str) -> Result<u64> {
     let id = query_unchecked!(
         r#"
-INSERT INTO product (`name`, `alias`, `title`, `subtitle`,
-`brand_id`, `brand_name`, `sell_price`, `img_url`, `creator`)
-VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO product (`name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`,
+`spec`, `kind`, `sell_price`, `import_price`, `jd_id`, `jd_url`, `img_url`,
+`status`, `comment`, `creator`)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 "#,
         product.name,
         product.alias,
@@ -202,8 +203,15 @@ VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)
         product.subtitle,
         product.brand_id,
         product.brand_name,
+        product.spec,
+        product.kind,
         product.sell_price,
+        product.import_price,
+        product.jd_id,
+        product.jd_url,
         product.img_url,
+        product.status,
+        product.comment,
         operator,
     )
     .execute(db)
@@ -213,12 +221,12 @@ VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)
     Ok(id)
 }
 
-pub async fn get_product(db: &MySqlPool, id: u64) -> Result<Option<ProductItem>> {
+pub async fn get_valid_product(db: &MySqlPool, id: u64) -> Result<Option<ProductItem>> {
     query_as_unchecked!(
         ProductItem,
         r#"
-SELECT `id`, `name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`, `spec`, `kind`, `sell_price`, `import_price`, `jd_id`, `jd_url`, `img_url`,
-`status`, `comment`
+SELECT `id`, `name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`, `spec`,
+`kind`, `sell_price`, `import_price`, `jd_id`, `jd_url`, `img_url`, `status`, `comment`
 FROM product
 WHERE id = ? AND status = ?
 "#,
@@ -230,18 +238,32 @@ WHERE id = ? AND status = ?
     .map_err(|e| e.into())
 }
 
-pub async fn get_products(db: &MySqlPool, paging: Paging) -> Result<Vec<ProductItem>> {
+pub async fn get_product(db: &MySqlPool, id: u64) -> Result<Option<ProductItem>> {
     query_as_unchecked!(
         ProductItem,
         r#"
-SELECT `id`, `name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`, `spec`, `kind`, `sell_price`, `import_price`, `jd_id`, `jd_url`, `img_url`,
-`status`, `comment`
+SELECT `id`, `name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`, `spec`,
+`kind`, `sell_price`, `import_price`, `jd_id`, `jd_url`, `img_url`, `status`, `comment`
 FROM product
-WHERE status = ? 
+WHERE id = ?
+"#,
+        id,
+    )
+    .fetch_optional(db)
+    .await
+    .map_err(|e| e.into())
+}
+
+pub async fn get_all_products(db: &MySqlPool, paging: Paging) -> Result<Vec<ProductItem>> {
+    query_as_unchecked!(
+        ProductItem,
+        r#"
+SELECT `id`, `name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`, `spec`,
+`kind`, `sell_price`, `import_price`, `jd_id`, `jd_url`, `img_url`, `status`, `comment`
+FROM product
 ORDER BY id
 LIMIT ?, ?
 "#,
-        CommonStatus::Valid as i8,
         paging.offset.unwrap_or(0),
         paging.limit.unwrap_or(MAX_ROWS).min(MAX_ROWS),
     )
@@ -259,7 +281,9 @@ pub async fn update_product(
     let row = query_unchecked!(
         r#"
 UPDATE product SET `name` = ?, `alias` = ?, `title` = ?, `subtitle` = ?,
-`brand_id` = ?, `brand_name` = ?, `sell_price` = ?, `img_url` = ?, modifier = ?
+`brand_id` = ?, `brand_name` = ?, `spec` = ?, `kind` = ?, `sell_price` = ?,
+`import_price` = ?, `jd_id` = ?, `jd_url` = ?, `img_url` = ?, `status` = ?,
+`comment` = ?, modifier = ?
 WHERE id = ?
 "#,
         product.name,
@@ -268,8 +292,15 @@ WHERE id = ?
         product.subtitle,
         product.brand_id,
         product.brand_name,
+        product.spec,
+        product.kind,
         product.sell_price,
+        product.import_price,
+        product.jd_id,
+        product.jd_url,
         product.img_url,
+        product.status,
+        product.comment,
         operator,
         id,
     )

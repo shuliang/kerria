@@ -124,8 +124,16 @@ pub async fn create_product(
     Ok(reply)
 }
 
-pub async fn get_product(env: Environment, id: u64) -> Result<Box<dyn warp::Reply>> {
-    let res = sql::cosmetics::get_product(env.db(), id).await?;
+pub async fn get_product(
+    env: Environment,
+    id: u64,
+    only_valid: bool,
+) -> Result<Box<dyn warp::Reply>> {
+    let res = if only_valid {
+        sql::cosmetics::get_valid_product(env.db(), id).await?
+    } else {
+        sql::cosmetics::get_product(env.db(), id).await?
+    };
     match res {
         Some(product) => return Ok(Box::new(warp::reply::json(&product))),
         None => return Ok(Box::new(StatusCode::OK)),
@@ -133,12 +141,25 @@ pub async fn get_product(env: Environment, id: u64) -> Result<Box<dyn warp::Repl
 }
 
 pub async fn get_products(env: Environment, paging: Paging) -> Result<impl warp::Reply> {
-    let res = sql::cosmetics::get_products(env.db(), paging).await?;
+    let res = sql::cosmetics::get_all_products(env.db(), paging).await?;
     let reply = warp::reply::json(&RespData {
         total: res.len(),
         data: res,
     });
     Ok(reply)
+}
+
+pub async fn update_product_by_admin(
+    env: Environment,
+    id: u64,
+    product: NewProduct,
+    operator: &str,
+) -> Result<impl warp::Reply> {
+    let ok = sql::cosmetics::update_product(env.db(), id, product, operator).await?;
+    if ok {
+        return Ok(StatusCode::OK);
+    }
+    Err(anyhow!("Update product failed, id: {}.", id).into())
 }
 
 pub async fn update_product(

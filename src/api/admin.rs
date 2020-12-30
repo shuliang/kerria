@@ -198,7 +198,7 @@ fn admin_cosmetics(
         .and(warp::get())
         .and(with_auth(env.clone()))
         .and_then(|id: u64, env: Environment, _user: AdminUser| async move {
-            handlers::cosmetics::get_product(env, id)
+            handlers::cosmetics::get_product(env, id, false)
                 .await
                 .map_err(problem::build)
         });
@@ -211,9 +211,14 @@ fn admin_cosmetics(
         .and(warp::body::json())
         .and_then(
             |id: u64, env: Environment, user: AdminUser, product: NewProduct| async move {
-                handlers::cosmetics::update_product(env, id, product, user.username.as_str())
-                    .await
-                    .map_err(problem::build)
+                handlers::cosmetics::update_product_by_admin(
+                    env,
+                    id,
+                    product,
+                    user.username.as_str(),
+                )
+                .await
+                .map_err(problem::build)
             },
         );
 
