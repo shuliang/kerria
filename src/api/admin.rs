@@ -107,7 +107,7 @@ fn admin_cosmetics(
 
     // brand
 
-    // GET /../brands
+    // Post /../brands
     let create_brands = warp::path!("brands")
         .and(warp::path::end())
         .and(warp::post())

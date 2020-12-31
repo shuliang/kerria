@@ -85,16 +85,11 @@ pub async fn update_brands_sequence(
     bss: Vec<BrandSequence>,
     operator: &str,
 ) -> Result<impl warp::Reply> {
-    if bss.len() == 1 {
-        return Ok(warp::reply::reply());
+    if bss.len() == 0 {
+        return Err(anyhow!("品牌顺序修改数据不能为空").into());
     }
     let ids: Vec<String> = bss.iter().map(|bs| bs.id.to_string()).collect();
     sql::cosmetics::is_brand_ids_valid(env.db(), ids).await?;
-
-    // bss.iter().map(|&bs| async move {
-    //     sql::cosmetics::update_brand_sequence(env.db(), bs, operator).await?
-    // });
-
     for bs in bss.iter() {
         sql::cosmetics::update_brand_sequence(env.db(), bs, &operator).await?;
     }
