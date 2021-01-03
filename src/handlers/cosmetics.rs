@@ -109,11 +109,12 @@ pub async fn delete_brand(env: Environment, id: u32, operator: &str) -> Result<i
 
 pub async fn create_product(
     env: Environment,
-    product: NewProduct,
+    product: &NewProduct,
     operator: &str,
 ) -> Result<impl warp::Reply> {
     product.validate()?;
-    let id = sql::cosmetics::create_product(env.db(), product, operator).await?;
+    let brand_id = sql::cosmetics::get_brand_id(env.db(), &product.brand_name).await?;
+    let id = sql::cosmetics::create_product(env.db(), product, brand_id, operator).await?;
     let reply = warp::reply::json(&json!({ "id": id }));
     let reply = warp::reply::with_status(reply, StatusCode::CREATED);
     Ok(reply)

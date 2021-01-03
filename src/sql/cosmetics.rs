@@ -56,6 +56,7 @@ pub async fn get_max_brand_sequence(db: &MySqlPool) -> Result<i32> {
 
     Ok(record.max_id.unwrap_or(0_i64) as i32)
 }
+
 pub async fn create_brands(db: &MySqlPool, brands: Vec<Brand>, operator: &str) -> Result<bool> {
     let mut brands = brands.clone();
     brands.sort_by(|a, b| a.sequence.cmp(&b.sequence));
@@ -90,6 +91,21 @@ LIMIT ?, ?"#,
     .fetch_all(db)
     .await
     .map_err(|e| e.into())
+}
+
+pub async fn get_brand_id(db: &MySqlPool, brand_name: &str) -> Result<u64> {
+    let record = query_unchecked!(
+        r#"SELECT id FROM brand WHERE name = ? AND status = ?"#,
+        brand_name,
+        CommonStatus::Valid as i8
+    )
+    .fetch_optional(db)
+    .await?;
+
+    match record {
+        Some(r) => Ok(r.id),
+        None => Err(anyhow!("品牌名'{}'不存在", brand_name)),
+    }
 }
 
 pub async fn get_all_brands(db: &MySqlPool) -> Result<Vec<Brand>> {
@@ -189,11 +205,16 @@ LIMIT ?, ?
 
 // product
 
-pub async fn create_product(db: &MySqlPool, product: NewProduct, operator: &str) -> Result<u64> {
+pub async fn create_product(
+    db: &MySqlPool,
+    product: &NewProduct,
+    brand_id: u64,
+    operator: &str,
+) -> Result<u64> {
     let id = query_unchecked!(
         r#"
-INSERT INTO product (`name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`,
-`spec`, `kind`, `sell_price`, `import_price`, `jd_id`, `jd_url`, `img_url`,
+INSERT INTO product (`name`, `alias`, `title`, `subtitle`, `brand_id`, `spec`,
+`kind`, `sell_price`, `import_price`, `sequence`, `jd_id`, `jd_url`, `img_url`,
 `status`, `comment`, `creator`)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 "#,
@@ -201,12 +222,12 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         product.alias,
         product.title,
         product.subtitle,
-        product.brand_id,
-        product.brand_name,
+        brand_id,
         product.spec,
         product.kind,
         product.sell_price,
         product.import_price,
+        product.sequence,
         product.jd_id,
         product.jd_url,
         product.img_url,
@@ -225,10 +246,13 @@ pub async fn get_valid_product(db: &MySqlPool, id: u64) -> Result<Option<Product
     query_as_unchecked!(
         ProductItem,
         r#"
-SELECT `id`, `name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`, `spec`,
-`kind`, `sell_price`, `import_price`, `jd_id`, `jd_url`, `img_url`, `status`, `comment`
-FROM product
-WHERE id = ? AND status = ?
+SELECT p.id, p.name, p.alias, p.title, p.subtitle, p.brand_id, b.name as brand_name,
+p.spec, p.kind, p.sell_price, p.import_price, p.sequence, p.jd_id, p.jd_url,
+p.img_url, p.status, p.comment
+FROM product p
+JOIN brand b
+ON p.brand_id = b.id
+WHERE p.id = ? AND p.status = ?
 "#,
         id,
         CommonStatus::Valid as i8,
@@ -242,10 +266,13 @@ pub async fn get_product(db: &MySqlPool, id: u64) -> Result<Option<ProductItem>>
     query_as_unchecked!(
         ProductItem,
         r#"
-SELECT `id`, `name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`, `spec`,
-`kind`, `sell_price`, `import_price`, `jd_id`, `jd_url`, `img_url`, `status`, `comment`
-FROM product
-WHERE id = ?
+SELECT p.id, p.name, p.alias, p.title, p.subtitle, p.brand_id, b.name as brand_name,
+p.spec, p.kind, p.sell_price, p.import_price, p.sequence, p.jd_id, p.jd_url,
+p.img_url, p.status, p.comment
+FROM product p
+JOIN brand b
+ON p.brand_id = b.id
+WHERE p.id = ?
 "#,
         id,
     )
@@ -258,10 +285,13 @@ pub async fn get_all_products(db: &MySqlPool, paging: Paging) -> Result<Vec<Prod
     query_as_unchecked!(
         ProductItem,
         r#"
-SELECT `id`, `name`, `alias`, `title`, `subtitle`, `brand_id`, `brand_name`, `spec`,
-`kind`, `sell_price`, `import_price`, `jd_id`, `jd_url`, `img_url`, `status`, `comment`
-FROM product
-ORDER BY id
+SELECT p.id, p.name, p.alias, p.title, p.subtitle, p.brand_id, b.name as brand_name,
+p.spec, p.kind, p.sell_price, p.import_price, p.sequence, p.jd_id, p.jd_url,
+p.img_url, p.status, p.comment
+FROM product p
+JOIN brand b
+ON p.brand_id = b.id
+ORDER BY p.id
 LIMIT ?, ?
 "#,
         paging.offset.unwrap_or(0),
@@ -281,8 +311,8 @@ pub async fn update_product(
     let row = query_unchecked!(
         r#"
 UPDATE product SET `name` = ?, `alias` = ?, `title` = ?, `subtitle` = ?,
-`brand_id` = ?, `brand_name` = ?, `spec` = ?, `kind` = ?, `sell_price` = ?,
-`import_price` = ?, `jd_id` = ?, `jd_url` = ?, `img_url` = ?, `status` = ?,
+`brand_id` = ?, `spec` = ?, `kind` = ?, `sell_price` = ?, `import_price` = ?,
+`sequence` = ?, `jd_id` = ?, `jd_url` = ?, `img_url` = ?, `status` = ?,
 `comment` = ?, modifier = ?
 WHERE id = ?
 "#,
@@ -291,11 +321,11 @@ WHERE id = ?
         product.title,
         product.subtitle,
         product.brand_id,
-        product.brand_name,
         product.spec,
         product.kind,
         product.sell_price,
         product.import_price,
+        product.sequence,
         product.jd_id,
         product.jd_url,
         product.img_url,

@@ -173,7 +173,7 @@ fn admin_cosmetics(
         .and(warp::body::json())
         .and_then(
             |env: Environment, user: AdminUser, product: NewProduct| async move {
-                handlers::cosmetics::create_product(env, product, user.username.as_str())
+                handlers::cosmetics::create_product(env, &product, user.username.as_str())
                     .await
                     .map_err(problem::build)
             },
