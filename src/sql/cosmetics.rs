@@ -54,7 +54,7 @@ pub async fn get_max_brand_sequence(db: &MySqlPool) -> Result<i32> {
     .fetch_one(db)
     .await?;
 
-    Ok(record.max_id.unwrap_or(0_i64) as i32)
+    Ok(record.max_id as i32)
 }
 
 pub async fn create_brands(db: &MySqlPool, brands: Vec<Brand>, operator: &str) -> Result<bool> {
