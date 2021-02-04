@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  api:
+    container_name: kerria-api-dev
+    build:
+      context: .
+      dockerfile: debug.Dockerfile
+    volumes:
+      - ${PWD}:/src-root
+    environment:
+      RUST_LOG: info
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:3306/${MYSQL_DB}
+      # REDIS_URL: redis://cache:6379/
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - 3000:3000
+    depends_on:
+      - db
+      # - cache
+    restart: always
+  
+  db:
+    container_name: kerria-db-dev
+    image: mysql:8.0.22
+    ports:
+      - 3306:3306
+    volumes:
+      - ${PWD}/data:/var/lib/mysql
+    environment:
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DB: ${MYSQL_DB}
+      TZ: Asia/Shanghai
+    command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+    restart: always
+
+  # cache:
+  #   image: redis:6.0.9
+  #   ports:
+  #     - 6379:6379
+  #   restart: always
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8088:8080
